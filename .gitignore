@@ -2,16 +2,20 @@
 #
 # Get latest from https://github.com/github/gitignore/blob/master/Unity.gitignore
 #
-/[Ll]ibrary/
-/[Tt]emp/
-/[Oo]bj/
+
+/BlocksWorldVisual/[Ll]ibrary/
+/BlocksWorldVisual/[Tt]emp/
+/BlocksWorldVisual/[Oo]bj/
+/BlocksWorldVisual/[Bb]uild/
+/BlocksWorldVisual/[Bb]uilds/
+/BlocksWorldVisual/[Ll]ogs/
+/BlocksWorldVisual/[Mm]emoryCaptures/
+
 /[Bb]uild/
 /[Bb]uilds/
-/[Ll]ogs/
-/[Mm]emoryCaptures/
 
 # Asset meta data should only be ignored when the corresponding asset is also ignored
-!/[Aa]ssets/**/*.meta
+!/BlocksWorldVisual/[Aa]ssets/**/*.meta
 
 # Uncomment this line if you wish to ignore the asset store tools plugin
 # /[Aa]ssets/AssetStoreTools*
