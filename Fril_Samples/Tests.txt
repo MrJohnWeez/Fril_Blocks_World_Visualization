@@ -1,0 +1,19 @@
+((on a b)(on table a)\n	(on    b c)(clear c))
+
+((on a b)(on table a)\n	(on    b c)(clear c)) % This test has a comment after a statement
+
+%This test has a comment before the statement
+((on a b)(on table a)(on b c)(clear c))
+
+%This test has a comment before the statement
+((on a b)(on table a)\n	(on    b c)(clear c)) % This test has a comment after a statement too
+
+((on a b)(on table a)(on b c)(clear c)(on table d)(on table e)(on table f)(on table g)(on table h)(on h i)(on i j))
+
+((on a b)(on table a)(on b c)(clear c)(on table d)(on table e)(on table f)(on table g)(on table h)(on h i)(on i j)
+
+(on a b)(on table a)(on b c)(clear c)(on table d)(on table e)(on table f)(on table g)(on table h)(on h i)(on i j))
+
+(on a b)(on table a)(on b c)(clear c)(on table d)(on table e)(on table f)(on table g)(on table h)(on h i)(on i j)
+
+((OnThis a b)(OnThis table a)(OnThis b c)(ClearThis c))
