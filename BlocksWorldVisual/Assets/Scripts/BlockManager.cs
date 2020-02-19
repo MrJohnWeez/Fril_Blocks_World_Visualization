@@ -13,32 +13,51 @@ using UnityEngine.UI;
 /// </summary>
 public class BlockManager : MonoBehaviour
 {
-	private const string _defaultFril = "((on a b)(on table a)\n	(on    b c)(clear c))";
 	private const string _defOn = "on";
 	private const string _defClear = "clear";
 	private const string _defTable = "table";
+	private const string _isOn = " is on ";
+	private const string _nothingStacked = " X has nothing stacked on top:";
+	private const string _xIsOnYPlaceholder = "((on b a)(on a table)(on c b)(clear c))";
+	private const string _yIsOnXPlaceholder = "((on a b)(on table a)(on b c)(clear c))";
 
+	[Header("Input Fields")]
 	[SerializeField] private TMP_InputField _onPredicate = null;
 	[SerializeField] private TMP_InputField _clearPredicate = null;
 	[SerializeField] private TMP_InputField _tableVarible = null;
 	[SerializeField] private TMP_InputField _frilInput = null;
-	[SerializeField] private TMP_Text _errorText = null;
 
+	[Header("Titles")]
+	[SerializeField] private TMP_Text _errorText = null;
+	[SerializeField] private TMP_Text _isOnText = null;
+	[SerializeField] private TMP_Text _clearText = null;
+
+	[Header("Game Objects and prefabs")]
 	[SerializeField] private GameObject _errorMenu = null;
 	[SerializeField] private GameObject _blockPrefab = null;
 	[SerializeField] private GameObject _towerPrefab = null;
 	[SerializeField] private GameObject _towers = null;
-
-	// Stores the blocks in graph form
-	private Dictionary<string, Block> _graph = null;
+	
+	private Dictionary<string, Block> _graph = null;    // Stores the blocks in graph form
+	private TMP_Text _frilInputPh = null;
+	// Parse strings
 	private string _onTable = _defOn;
 	private string _table = _defTable;
 	private string _isClear = _defClear;
-	private string _encounteredError = "";		// TODO: Should use exceptions but this is just a quick solution
 	private string[] _parsedFril = null;
+
+	private string _encounteredError = "";		// TODO: Should use exceptions but this is just a quick solution
 	private List<List<string>> _cleanCode = new List<List<string>>();
-	
-    void Start()
+
+	// States
+	private bool _xOnYMode = true;
+
+	private void Awake()
+	{
+		_frilInputPh = _frilInput.placeholder.GetComponent<TMP_Text>();
+	}
+
+	void Start()
     {
 		SetErrorMenuState(false);
 		GenerateBlocks(true);
@@ -52,7 +71,7 @@ public class BlockManager : MonoBehaviour
 	{
 		ClearBlocks();
 		SetPredicateAndVarNames();
-		_parsedFril = _frilInput.text.ContainsInfo() ? FrilToString(_frilInput.text) : FrilToString(_defaultFril);
+		_parsedFril = _frilInput.text.ContainsInfo() ? FrilToString(_frilInput.text) : FrilToString(_frilInputPh.text);
 
 		if(!_encounteredError.ContainsInfo())
 			_cleanCode = FrilCommandsToListList(_parsedFril);
@@ -166,7 +185,9 @@ public class BlockManager : MonoBehaviour
 				if (!outGraph.ContainsKey(stringCode[2]))
 					outGraph[stringCode[2]] = new Block(stringCode[2]);
 
-				outGraph[stringCode[1]].AddEdge(outGraph[stringCode[2]]);
+				// Depending on what isOn mode user is using the edge direction will switch
+				int[] indexs = _xOnYMode ? new int[2] { 2, 1 } : new int[2] { 1, 2 };
+				outGraph[stringCode[indexs[0]]].AddEdge(outGraph[stringCode[indexs[1]]]);
 			}
 		}
 		
@@ -261,6 +282,54 @@ public class BlockManager : MonoBehaviour
 		}
 
 		return masterList;
+	}
+
+	/// <summary>
+	/// Updates the titles of the input fields every time a user changes a predicate
+	/// </summary>
+	public void UpdateTexts()
+	{
+		// TODO: Make each input field have a seperate function to save recomputations
+		ValidateInputField(ref _onPredicate);
+		ValidateInputField(ref _tableVarible);
+		ValidateInputField(ref _clearPredicate);
+
+		SetPredicateAndVarNames();
+		string isOnSwitch = _xOnYMode ? "X" + _isOn + "Y:" : "Y" + _isOn + "X:";
+		_isOnText.text = "(" + _onTable + " X Y) " + isOnSwitch;
+		_clearText.text = "(" + _isClear + " X)" + _nothingStacked;
+		_frilInputPh.text = _xOnYMode ? _xIsOnYPlaceholder : _yIsOnXPlaceholder;
+		GenerateBlocks();
+	}
+
+	/// <summary>
+	/// Makes sure an input field contains a valid string
+	/// </summary>
+	/// <param name="inputF"></param>
+	private void ValidateInputField(ref TMP_InputField inputF)
+	{
+		// TODO: This should be done within TMP input validation exstention
+		string input = inputF.text;
+		if(string.IsNullOrWhiteSpace(input))
+		{
+			inputF.text = "";
+		}
+
+		string newInput = input.Trim(new Char[] { '(', ')', ' ' });
+		if(input != newInput)
+		{
+			inputF.text = newInput;
+		}
+	}
+
+	/// <summary>
+	/// Toggles the way 'isOn' is evauated
+	/// </summary>
+	public void ToggleIsOnState()
+	{
+		_xOnYMode = !_xOnYMode;
+		UpdateTexts();
+		GenerateBlocks();
 	}
 
 	public void ExitApplication()
