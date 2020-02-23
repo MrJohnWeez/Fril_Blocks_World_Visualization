@@ -15,11 +15,11 @@ public class BlockManager : MonoBehaviour
 {
 	private const string _defOn = "on";
 	private const string _defClear = "clear";
-	private const string _defTable = "table";
+	private const string _defTable = "Table";
 	private const string _isOn = " is on ";
 	private const string _nothingStacked = " X has nothing stacked on top:";
-	private const string _xIsOnYPlaceholder = "((on b a)(on a table)(on c b)(clear c))";
-	private const string _yIsOnXPlaceholder = "((on a b)(on table a)(on b c)(clear c))";
+	private const string _xIsOnYPlaceholder = "((on a b)(on b Table)(clear a))";
+	private const string _yIsOnXPlaceholder = "((on b a)(on Table b)(clear a))";
 
 	[Header("Input Fields")]
 	[SerializeField] private TMP_InputField _onPredicate = null;
@@ -39,6 +39,7 @@ public class BlockManager : MonoBehaviour
 	[SerializeField] private GameObject _towers = null;
 	
 	private Dictionary<string, Block> _graph = null;    // Stores the blocks in graph form
+	private Dictionary<string, string> _frilPhrasesParsed = null;
 	private TMP_Text _frilInputPh = null;
 	// Parse strings
 	private string _onTable = _defOn;
@@ -60,6 +61,7 @@ public class BlockManager : MonoBehaviour
 	void Start()
     {
 		SetErrorMenuState(false);
+		UpdateTexts();
 		GenerateBlocks(true);
 	}
 
@@ -69,10 +71,12 @@ public class BlockManager : MonoBehaviour
 	/// <param name="alertUser"></param>
 	public void GenerateBlocks(bool alertUser = false)
 	{
+		_encounteredError = "";
 		ClearBlocks();
 		SetPredicateAndVarNames();
 		_parsedFril = _frilInput.text.ContainsInfo() ? FrilToString(_frilInput.text) : FrilToString(_frilInputPh.text);
 
+		//print("Parsed Fril: \n" + _parsedFril.ArrayToString());
 		if(!_encounteredError.ContainsInfo())
 			_cleanCode = FrilCommandsToListList(_parsedFril);
 
@@ -170,12 +174,22 @@ public class BlockManager : MonoBehaviour
 			[_table] = new Block(_table, true)
 		};
 
+		_encounteredError = "";
+		bool atleast1Clear = false;
 		foreach (List<string> stringCode in cleanCode)
 		{
+			bool wasValid = false;
 			if (stringCode.Count == 2)
 			{
 				if (stringCode[0] == _isClear && !outGraph.ContainsKey(stringCode[1]))
 					outGraph[stringCode[1]] = new Block(stringCode[1]);
+
+				if(stringCode[0] == _isClear)
+				{
+					wasValid = outGraph[stringCode[1]].MakeClear();
+					if(wasValid)
+						atleast1Clear = true;
+				}
 			}
 			else if(stringCode.Count == 3 && stringCode[0] == _onTable)
 			{
@@ -187,8 +201,18 @@ public class BlockManager : MonoBehaviour
 
 				// Depending on what isOn mode user is using the edge direction will switch
 				int[] indexs = _xOnYMode ? new int[2] { 2, 1 } : new int[2] { 1, 2 };
-				outGraph[stringCode[indexs[0]]].AddEdge(outGraph[stringCode[indexs[1]]]);
+				wasValid = outGraph[stringCode[indexs[0]]].AddEdge(outGraph[stringCode[indexs[1]]]);
 			}
+
+			if(!wasValid)
+			{
+				_encounteredError = "Error: Invalid Graph!";
+			}
+		}
+
+		if(!atleast1Clear)
+		{
+			_encounteredError = "Error: Invalid Graph!";
 		}
 		
 		return outGraph;
@@ -242,10 +266,20 @@ public class BlockManager : MonoBehaviour
 		string[] slpitString = Regex.Split(unparsedFril, pattern);
 
 		List<string> areValid = new List<string>();
+		_frilPhrasesParsed = new Dictionary<string, string>();
 		foreach (string s in slpitString)
 		{
 			if(s.ContainsInfo())
+			{
+				if(_frilPhrasesParsed.ContainsKey(s))
+				{
+					_encounteredError = "Error: Fril statement contains duplicate statements";
+					return null;
+				}
+				_frilPhrasesParsed[s] = s;
 				areValid.Add(s);
+			}
+				
 		}
 
 		return areValid.Count > 0 ? areValid.ToArray() : null;
@@ -342,4 +376,28 @@ public class BlockManager : MonoBehaviour
 		Application.Quit();
 
 	}
+
+
+
+	// Test cases:
+	// Should pass:
+	// ((on a b)(clear a)(on b Table))
+	// ((clear a)(on a b)(on b Table))
+	// ((on b Table)(clear a)(on a b))
+	// ((on b Table)(clear b))
+	// ((on a Table)(on b Table)(clear a)(clear b))
+	// ((on a Table)(on b Table)(clear c)(on c b))
+	// ((on a Table)(clear a))
+	// ((onto at table)(onto best table)(clearing cute)(onto cute best))
+	// ((on a Table)(on b a)(on c b)(on d c)(on e d)(on f e)(on g f)(clear g))
+
+
+
+
+	// Should fail:
+	// (())
+	// ((on a Table)(on b Table)(on b Table)(on c b))
+	// ((on b a)(on a b)(clear a)(clear b))
+	// ((clear a)(clear b))
+
 }

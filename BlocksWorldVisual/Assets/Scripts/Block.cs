@@ -13,6 +13,7 @@ public class Block
 
 	private bool isTable = false;
 	public bool hasVisited = false;
+	public bool isClear = false;
 
 	public Block()
 	{
@@ -25,9 +26,28 @@ public class Block
 		isTable = isBlockATable;
 	}
 
+	/// <summary>
+	/// Makes a block clear
+	/// </summary>
+	/// <returns>True if successful</returns>
+	public bool MakeClear()
+	{
+		if(edges.Count == 0)
+		{
+			isClear = true;
+			return true;
+		}
+		return false;
+	}
+
+	/// <summary>
+	/// Adds an edge to a block
+	/// </summary>
+	/// <param name="neigborBlock">block name of neighbor</param>
+	/// <returns>True if successful</returns>
 	public bool AddEdge(Block neigborBlock)
 	{
-		if(isTable || (!isTable && edges.Count < 1))
+		if((isTable || (!isTable && edges.Count < 1)) && !isClear)
 		{
 			edges.Add(neigborBlock.self);
 			return true;
