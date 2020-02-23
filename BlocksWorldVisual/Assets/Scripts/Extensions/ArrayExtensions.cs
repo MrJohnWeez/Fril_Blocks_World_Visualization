@@ -17,7 +17,7 @@ public static class ArrayExtensions
 		{
 			foreach (T typeValue in value)
 			{
-				longString += typeValue.ToString();
+				longString += typeValue.ToString() + "\n";
 			}
 		}
 		return longString;
